@@ -37,7 +37,7 @@ class ListBlocksApiView(APIView):
         if get_data.get('sort_field'):
             sort_field = get_data.get('sort_field')
             order = get_data.get('sort_order')
-            blocks.sort(key=lambda x: x[sort_field], reverse=True if order == 'desc' else False)
+            blocks.sort(key=lambda x: x[sort_field], reverse=order == 'desc')
         # -----------------------------------------------------------
         page_number = self.request.query_params.get('page_number', 1)
         page_size = self.request.query_params.get('page_size', 10)
@@ -93,7 +93,7 @@ class ListTransactionsApiView(APIView):
         if self.request.query_params.get('sort_field'):
             sort_field = self.request.query_params.get('sort_field')
             order = self.request.query_params.get('sort_order')
-            block['tx'].sort(key=lambda x: x[sort_field], reverse=True if order == 'desc' else False)
+            block['tx'].sort(key=lambda x: x[sort_field], reverse=order == 'desc')
         # -----------------------------------------------------------
         page_number = self.request.query_params.get('page_number', 1)
         page_size = self.request.query_params.get('page_size', 10)
