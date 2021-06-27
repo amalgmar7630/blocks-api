@@ -25,8 +25,7 @@ class ListBlocksApiView(APIView):
         get_data = request.query_params  # or request.GET check both
         yesterday = date.today() - timedelta(days=1)
         yesterday_milliseconds = int(yesterday.strftime("%s")) * 1000
-        blocks = get_blocks(str(get_data.get('time'))) if get_data.get('time') else get_blocks(
-            str(yesterday_milliseconds))
+        blocks = get_blocks(str(yesterday_milliseconds))
         if get_data.get('search'):
             blocks = list(
                 filter(lambda x: get_data.get('search') in x['hash'] or get_data.get('search') in str(
