@@ -27,6 +27,12 @@ class ListBlocksApiView(APIView):
         yesterday_milliseconds = int(yesterday.strftime("%s")) * 1000
         blocks = get_blocks(str(get_data.get('time'))) if get_data.get('time') else get_blocks(
             str(yesterday_milliseconds))
+        if get_data.get('search'):
+            blocks = list(
+                filter(lambda x: get_data.get('search') in x['hash'] or get_data.get('search') in str(
+                    x['time']) or get_data.get('search') in str(x['height']) or get_data.get('search') in str(
+                    x['block_index']),
+                       blocks))
         # -----------------------------------------------------------
         page_number = self.request.query_params.get('page_number', 1)
         page_size = self.request.query_params.get('page_size', 10)
@@ -72,6 +78,13 @@ class ListTransactionsApiView(APIView):
         """
         block_hash = kwargs.get('hash')
         block = get_block(block_hash)
+        if self.request.query_params.get('search'):
+            search_query = self.request.query_params.get('search')
+            block['tx'] = list(
+                filter(lambda x: search_query in x['hash'] or search_query in str(
+                    x['time']) or search_query in str(x['size']) or search_query in str(
+                    x['weight']) or search_query in str(x['fee']),
+                       block['tx']))
         # -----------------------------------------------------------
         page_number = self.request.query_params.get('page_number', 1)
         page_size = self.request.query_params.get('page_size', 10)
