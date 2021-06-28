@@ -36,33 +36,36 @@ class ListBlocksApiView(APIView):
         if blocks is None:
             blocks = get_blocks(str(yesterday_milliseconds))
             cache.set(cache_key, blocks)
+        serializer_before_pagination = BlockSerializer(data=blocks, many=True, context={'request': request})
+        if serializer_before_pagination.is_valid():
+            serializer_before_pagination_data = [dict(obj) for obj in serializer_before_pagination.data]
+            # Filter data if filter is applied
+            if get_data.get('search'):
+                serializer_before_pagination_data = list(
+                    filter(lambda x: get_data.get('search') in x['hash'] or get_data.get('search') in str(
+                        x['time_into_datetime']) or get_data.get('search') in str(x['height']) or get_data.get('search') in str(
+                        x['block_index']),
+                           serializer_before_pagination_data))
+            # Sorting data if sorting query param is applied
+            if get_data.get('sort_field'):
+                sort_field = get_data.get('sort_field')
+                order = get_data.get('sort_order')
+                serializer_before_pagination_data.sort(key=lambda x: x[sort_field], reverse=order == 'desc')
 
-        # Filter data if filter is applied
-        if get_data.get('search'):
-            blocks = list(
-                filter(lambda x: get_data.get('search') in x['hash'] or get_data.get('search') in str(
-                    x['time']) or get_data.get('search') in str(x['height']) or get_data.get('search') in str(
-                    x['block_index']),
-                       blocks))
-        # Sorting data if sorting query param is applied
-        if get_data.get('sort_field'):
-            sort_field = get_data.get('sort_field')
-            order = get_data.get('sort_order')
-            blocks.sort(key=lambda x: x[sort_field], reverse=order == 'desc')
+            # Set Pagination
+            # -----------------------------------------------------------
+            page_number = self.request.query_params.get('page_number', 1)
+            page_size = self.request.query_params.get('page_size', 10)
 
-        # Set Pagination
-        # -----------------------------------------------------------
-        page_number = self.request.query_params.get('page_number', 1)
-        page_size = self.request.query_params.get('page_size', 10)
+            paginator = Paginator(serializer_before_pagination_data, page_size)
+            serializer = BlockSerializer(paginator.page(page_number), data=serializer_before_pagination_data, many=True,
+                                         context={'request': request})
+            # -----------------------------------------------------------
 
-        paginator = Paginator(blocks, page_size)
-        serializer = BlockSerializer(paginator.page(page_number), data=blocks, many=True, context={'request': request})
-        # -----------------------------------------------------------
-
-        # Apply serializer on our blocks data
-        if serializer.is_valid():
-            result = {'totalSize': len(blocks), 'results': serializer.data}
-            return Response(result)
+            # Apply serializer on our blocks data
+            if serializer.is_valid():
+                result = {'totalSize': len(serializer_before_pagination_data), 'results': serializer.data}
+                return Response(result)
         return Response({})
 
 
@@ -111,32 +114,35 @@ class ListTransactionsApiView(APIView):
             block_details = get_block(block_hash)
             cache.set(block_hash, block_details)
 
-        # Filter data if search keywarg is applied
-        if self.request.query_params.get('search'):
-            search_query = self.request.query_params.get('search')
-            block_details['tx'] = list(
-                filter(lambda x: search_query in x['hash'] or search_query in str(
-                    x['time']) or search_query in str(x['size']) or search_query in str(
-                    x['weight']) or search_query in str(x['fee']),
-                       block_details['tx']))
+        serializer_before_pagination = BlockTransactionSerializer(data=block_details['tx'], many=True, context={'request': request})
+        if serializer_before_pagination.is_valid():
+            serializer_before_pagination_data = [dict(obj) for obj in serializer_before_pagination.data]
+            # Filter data if search query param is applied
+            if self.request.query_params.get('search'):
+                search_query = self.request.query_params.get('search')
+                serializer_before_pagination_data = list(
+                    filter(lambda x: search_query in x['hash'] or search_query in str(
+                        x['time_into_datetime']) or search_query in str(x['size']) or search_query in str(
+                        x['weight']) or search_query in str(x['fee']),
+                           serializer_before_pagination_data))
 
-        # Sort data if sort_field is applied
-        if self.request.query_params.get('sort_field'):
-            sort_field = self.request.query_params.get('sort_field')
-            order = self.request.query_params.get('sort_order')
-            block_details['tx'].sort(key=lambda x: x[sort_field], reverse=order == 'desc')
+            # Sort data if sort_field is applied
+            if self.request.query_params.get('sort_field'):
+                sort_field = self.request.query_params.get('sort_field')
+                order = self.request.query_params.get('sort_order')
+                serializer_before_pagination_data.sort(key=lambda x: x[sort_field], reverse=order == 'desc')
 
-        # Pagination
-        # -----------------------------------------------------------
-        page_number = self.request.query_params.get('page_number', 1)
-        page_size = self.request.query_params.get('page_size', 10)
+            # Pagination
+            # -----------------------------------------------------------
+            page_number = self.request.query_params.get('page_number', 1)
+            page_size = self.request.query_params.get('page_size', 10)
 
-        paginator = Paginator(block_details['tx'], page_size)
+            paginator = Paginator(serializer_before_pagination_data, page_size)
 
-        # -----------------------------------------------------------
-        # Apply serializer
-        serializer = BlockTransactionSerializer(paginator.page(page_number), data=block_details['tx'], many=True)
-        if serializer.is_valid():
-            result = {'totalSize': len(block_details['tx']), 'results': serializer.data}
-            return Response(result)
+            # -----------------------------------------------------------
+            # Apply serializer
+            serializer = BlockTransactionSerializer(paginator.page(page_number), data=serializer_before_pagination_data, many=True)
+            if serializer.is_valid():
+                result = {'totalSize': len(serializer_before_pagination_data), 'results': serializer.data}
+                return Response(result)
         return Response({})
