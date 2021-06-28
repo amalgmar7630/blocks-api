@@ -8,7 +8,6 @@ class BlockSerializer(serializers.Serializer):
     height = serializers.IntegerField()
     time = serializers.IntegerField()
     time_into_datetime = serializers.SerializerMethodField('get_time')
-    block_index = serializers.IntegerField()
 
     def get_time(self, instance):
         to_datetime = datetime.fromtimestamp(instance['time'])
@@ -31,16 +30,6 @@ class BlockTransactionSerializer(serializers.Serializer):
 
 
 class BlockDetailsSerializer(serializers.Serializer):
-    hash = serializers.CharField()
-    time = serializers.IntegerField()
-    time_into_datetime = serializers.SerializerMethodField('get_time')
-    fee = serializers.IntegerField()
     size = serializers.IntegerField()
-    height = serializers.IntegerField()
-    weight = serializers.IntegerField()
-
-    def get_time(self, instance):
-        print('innstance', dict(instance))
-        to_datetime = datetime.fromtimestamp(dict(instance)['time'])
-        datetime_string = to_datetime.strftime("%d-%b-%Y (%H:%M:%S)")
-        return datetime_string
+    block_index = serializers.IntegerField()
+    prev_block = serializers.CharField()
