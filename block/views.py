@@ -26,26 +26,31 @@ class ListBlocksApiView(APIView):
         get_data = request.query_params  # or request.GET check both
         yesterday = date.today() - timedelta(days=1)
         yesterday_milliseconds = int(yesterday.strftime("%s")) * 1000
-        # Make a SHA1 hash of the PKs (cache key)
+        # make a unique cache key as yesterday timestamp
         cache_key = str(yesterday_milliseconds)
 
         # Get the existing cache
         blocks = cache.get(cache_key)
 
+        # Fetch blocks from cache ar set it to cache
         if blocks is None:
             blocks = get_blocks(str(yesterday_milliseconds))
             cache.set(cache_key, blocks)
+
+        # Filter data if filter is applied
         if get_data.get('search'):
             blocks = list(
                 filter(lambda x: get_data.get('search') in x['hash'] or get_data.get('search') in str(
                     x['time']) or get_data.get('search') in str(x['height']) or get_data.get('search') in str(
                     x['block_index']),
                        blocks))
-
+        # Sorting data if sorting query param is applied
         if get_data.get('sort_field'):
             sort_field = get_data.get('sort_field')
             order = get_data.get('sort_order')
             blocks.sort(key=lambda x: x[sort_field], reverse=order == 'desc')
+
+        # Set Pagination
         # -----------------------------------------------------------
         page_number = self.request.query_params.get('page_number', 1)
         page_size = self.request.query_params.get('page_size', 10)
@@ -53,6 +58,8 @@ class ListBlocksApiView(APIView):
         paginator = Paginator(blocks, page_size)
         serializer = BlockSerializer(paginator.page(page_number), data=blocks, many=True, context={'request': request})
         # -----------------------------------------------------------
+
+        # Apply serializer on our blocks data
         if serializer.is_valid():
             result = {'totalSize': len(blocks), 'results': serializer.data}
             return Response(result)
@@ -71,11 +78,14 @@ class DetailBlocksApiView(APIView):
         Return an object with details of a block.
         """
         block_hash = kwargs.get('hash')
-        # Get the existing cache
+        # Get the existing cache by key as hash
         block_details = cache.get(block_hash)
+        # Get block details from cache or set it
         if block_details is None:
             block_details = get_block(block_hash)
             cache.set(block_hash, block_details)
+
+        # Apply serializer on our block details data
         serializer = BlockDetailsSerializer(data=block_details)
         if serializer.is_valid():
             return Response(serializer.data)
@@ -96,9 +106,12 @@ class ListTransactionsApiView(APIView):
         block_hash = kwargs.get('hash')
         # Get the existing cache
         block_details = cache.get(block_hash)
+        # Get block transactions list from cache or set it
         if block_details is None:
             block_details = get_block(block_hash)
             cache.set(block_hash, block_details)
+
+        # Filter data if search keywarg is applied
         if self.request.query_params.get('search'):
             search_query = self.request.query_params.get('search')
             block_details['tx'] = list(
@@ -106,18 +119,23 @@ class ListTransactionsApiView(APIView):
                     x['time']) or search_query in str(x['size']) or search_query in str(
                     x['weight']) or search_query in str(x['fee']),
                        block_details['tx']))
+
+        # Sort data if sort_field is applied
         if self.request.query_params.get('sort_field'):
             sort_field = self.request.query_params.get('sort_field')
             order = self.request.query_params.get('sort_order')
             block_details['tx'].sort(key=lambda x: x[sort_field], reverse=order == 'desc')
+
+        # Pagination
         # -----------------------------------------------------------
         page_number = self.request.query_params.get('page_number', 1)
         page_size = self.request.query_params.get('page_size', 10)
 
         paginator = Paginator(block_details['tx'], page_size)
-        serializer = BlockTransactionSerializer(paginator.page(page_number), data=block_details['tx'], many=True)
 
         # -----------------------------------------------------------
+        # Apply serializer
+        serializer = BlockTransactionSerializer(paginator.page(page_number), data=block_details['tx'], many=True)
         if serializer.is_valid():
             result = {'totalSize': len(block_details['tx']), 'results': serializer.data}
             return Response(result)

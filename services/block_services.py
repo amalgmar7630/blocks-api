@@ -3,6 +3,10 @@ import requests
 base_url_blocks_by_time = "https://blockchain.info/blocks"
 base_url_block_details = "https://blockchain.info/rawblock"
 
+"""
+Get blocks list of yesterday's from blockchain api
+"""
+
 
 def get_blocks(millisecond_time) -> list:
     """
@@ -13,6 +17,11 @@ def get_blocks(millisecond_time) -> list:
     response = requests.get(url)
 
     return response.json()
+
+
+"""
+Get block details by hash from blockchain api
+"""
 
 
 def get_block(block_hash: str) -> dict:
