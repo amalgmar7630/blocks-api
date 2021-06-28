@@ -41,6 +41,13 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_filters'
 ]
+CACHES = {
+    'default': {
+        'BACKEND': 'redis_cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379',
+        'TIMEOUT': 24*3600  # example of 1 day
+    }
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
