@@ -12,7 +12,7 @@ from services.block_services import get_blocks, get_block
 
 class ListBlocksApiView(APIView):
     """
-    View to list all blocks-api in the system.
+    View to list all blocks in the system.
 
     """
     serializer_class = BlockSerializer
@@ -21,7 +21,7 @@ class ListBlocksApiView(APIView):
 
     def get(self, request, format=None):
         """
-        Return a list of all blocks-api by time.
+        Return a list of all blocks by time.
         """
         get_data = request.query_params  # or request.GET check both
         yesterday = date.today() - timedelta(days=1)
@@ -71,7 +71,7 @@ class ListBlocksApiView(APIView):
 
 class DetailBlocksApiView(APIView):
     """
-    View the details of a specific block bu hash.
+    View the details of a specific block by hash.
 
     """
     serializer_class = BlockDetailsSerializer
